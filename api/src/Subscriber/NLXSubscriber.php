@@ -54,15 +54,16 @@ class NLXSubscriber implements EventSubscriberInterface
 
         // now we need to overide the normal subscriber
         $json = $this->serializer->serialize(
-                $logs,
-                'jsonhal', ['enable_max_depth' => true]
-                );
+            $logs,
+            'jsonhal',
+            ['enable_max_depth' => true]
+        );
 
         $response = new Response(
-                $json,
-                Response::HTTP_OK,
-                ['content-type' => 'application/json+hal']
-                );
+            $json,
+            Response::HTTP_OK,
+            ['content-type' => 'application/json+hal']
+        );
 
         $event->setResponse($response);
     }
