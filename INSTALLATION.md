@@ -12,7 +12,7 @@ Create the tiller service account:
 $ kubectl -n kube-system create serviceaccount tiller --kubeconfig="api/helm/kubeconfig.yaml"
 ```
 
-Next, bind the tiller service account to the cluster-admin role:
+Next, bind the tiller service account to the cluster-admin role: 
 ```CLI
 $ kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller --kubeconfig="api/helm/kubeconfig.yaml"
 ```
