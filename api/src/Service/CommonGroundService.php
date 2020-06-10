@@ -31,12 +31,12 @@ class CommonGroundService
             'X-NLX-Request-Application-Id' => $this->params->get('app_commonground_id'), // the id of the application performing the request
         ];
 
-        if ($session->get('user')) {
-            $headers['X-NLX-Request-User-Id'] = $session->get('user')['@id'];
+        if ($session->get('user') === $user) {
+            $headers['X-NLX-Request-User-Id'] = $user['@id'];
         }
 
-        if ($session->get('process')) {
-            $headers[] = $session->get('process')['@id'];
+        if ($session->get('process') === $process) {
+            $headers[] = $process['@id'];
         }
 
         // We might want to overwrite the guzle config, so we declare it as a separate array that we can then later adjust, merge or otherwise influence
@@ -74,27 +74,10 @@ class CommonGroundService
         if (!$url) {
             return false;
         }
-
-        // Split enviroments, if the env is not dev the we need add the env to the url name
-        $parsedUrl = parse_url($url);
-
-        // We only do this on non-production enviroments
-        if ($this->params->get('app_env') != 'prod') {
-
-            // Lets make sure we dont have doubles
-            $url = str_replace($this->params->get('app_env').'.', '', $url);
-
-            // e.g https://wrc.larping.eu/ becomes https://wrc.dev.larping.eu/
-            $host = explode('.', $parsedUrl['host']);
-            $subdomain = $host[0];
-            $url = str_replace($subdomain, $subdomain.'.'.$this->params->get('app_env'), $url);
-        }
+        $parsedUrl = $parse_url($url);
 
         $elementList = [];
         foreach ($query as $element) {
-            if (!is_array($element)) {
-                break;
-            }
             $elementList[] = implode('=', $element);
         }
         $elementList = implode(',', $elementList);
@@ -109,43 +92,21 @@ class CommonGroundService
             //return $item->get();
         }
 
-        if (!$async) {
-            $response = $this->client->request(
-                'GET',
-                $url,
-                [
-                    'query'   => $query,
-                    'headers' => $headers,
-                ]
-            );
-        } else {
-            $response = $this->client->requestAsync(
-                'GET',
-                $url,
-                [
-                    'query'   => $query,
-                    'headers' => $headers,
-                ]
-            );
-        }
-
-        if ($response->getStatusCode() != 200) {
-            var_dump('GET returned:'.$response->getStatusCode());
-            var_dump(json_encode($query));
-            var_dump(json_encode($headers));
-            var_dump(json_encode($url));
-            var_dump($response->getBody());
-            die;
-        }
+        $response = $this->client->request(
+            'GET',
+            $url,
+            [
+                'query'   => $query,
+                'headers' => $headers,
+            ]
+        );
 
         $response = json_decode($response->getBody(), true);
 
-        //var_dump($response);
-
         /* @todo this should look to al @id keus not just the main root */
-        foreach ($response['hydra:member'] as $key => $embedded) {
-            if (array_key_exists('@id', $embedded) && $embedded['@id']) {
-                $response['hydra:member'][$key]['@id'] = $parsedUrl['scheme'].'://'.$parsedUrl['host'].$embedded['@id'];
+        foreach ($response['_embedded'] as $key => $embedded) {
+            if ($embedded['@id']) {
+                $response['_embedded'][$key]['@id'] = $parsedUrl['host'].$embedded['@id'];
             }
         }
 
@@ -164,21 +125,7 @@ class CommonGroundService
         if (!$url) {
             //return false;
         }
-
-        // Split enviroments, if the env is not dev the we need add the env to the url name
-        $parsedUrl = parse_url($url);
-
-        // We only do this on non-production enviroments
-        if ($this->params->get('app_env') != 'prod') {
-
-            // Lets make sure we dont have doubles
-            $url = str_replace($this->params->get('app_env').'.', '', $url);
-
-            // e.g https://wrc.larping.eu/ becomes https://wrc.dev.larping.eu/
-            $host = explode('.', $parsedUrl['host']);
-            $subdomain = $host[0];
-            $url = str_replace($subdomain, $subdomain.'.'.$this->params->get('app_env'), $url);
-        }
+        $parsedUrl = $parse_url($url);
 
         // To work with NLX we need a couple of default headers
         $headers = $this->headers;
@@ -189,25 +136,14 @@ class CommonGroundService
             //return $item->get();
         }
 
-        if (!$async) {
-            $response = $this->client->request(
-                'GET',
-                $url,
-                [
-                    'query'   => $query,
-                    'headers' => $headers,
-                ]
-            );
-        } else {
-            $response = $this->client->requestAsync(
-                'GET',
-                $url,
-                [
-                    'query'   => $query,
-                    'headers' => $headers,
-                ]
-            );
-        }
+        $response = $this->client->request(
+            'GET',
+            $url,
+            [
+                'query'   => $query,
+                'headers' => $headers,
+            ]
+        );
 
         if ($response->getStatusCode() != 200) {
             var_dump('GET returned:'.$response->getStatusCode());
@@ -220,8 +156,8 @@ class CommonGroundService
 
         $response = json_decode($response->getBody(), true);
 
-        if (array_key_exists('@id', $response) && $response['@id']) {
-            $response['@id'] = $parsedUrl['scheme'].'://'.$parsedUrl['host'].$response['@id'];
+        if ($response['@id']) {
+            $response['@id'] = $parsedUrl['host'].$response['@id'];
         }
 
         $item->set($response);
@@ -239,25 +175,7 @@ class CommonGroundService
         if (!$url) {
             return false;
         }
-
-        // Split enviroments, if the env is not dev the we need add the env to the url name
-        $parsedUrl = parse_url($url);
-
-        // We only do this on non-production enviroments
-        if ($this->params->get('app_env') != 'prod') {
-
-            // Lets make sure we dont have doubles
-            $url = str_replace($this->params->get('app_env').'.', '', $url);
-
-            // e.g https://wrc.larping.eu/ becomes https://wrc.dev.larping.eu/
-            $host = explode('.', $parsedUrl['host']);
-            $subdomain = $host[0];
-            $url = str_replace($subdomain, $subdomain.'.'.$this->params->get('app_env'), $url);
-        }
-
-        // To work with NLX we need a couple of default headers
-        $headers = $this->headers;
-        $headers['X-NLX-Request-Subject-Identifier'] = $url;
+        $parsedUrl = $parse_url($url);
 
         unset($resource['@context']);
         unset($resource['@id']);
@@ -266,26 +184,19 @@ class CommonGroundService
         unset($resource['_links']);
         unset($resource['_embedded']);
 
-        if (!$async) {
-            $response = $this->client->request(
-                'PUT',
-                $url,
-                [
-                    'body'    => json_encode($resource),
-                    'query'   => $query,
-                    'headers' => $headers,
-                ]
-            );
-        } else {
-            $response = $this->client->requestAsync(
-                'PUT',
-                $url,
-                [
-                    'body'    => json_encode($resource),
-                    'query'   => $query,
-                    'headers' => $headers,
-                ]
-            );
+        $response = $this->client->request(
+            'PUT',
+            $url,
+            [
+                'body' => json_encode($resource),
+            ]
+        );
+
+        if ($response->getStatusCode() != 200) {
+            var_dump(json_encode($resource));
+            var_dump(json_encode($url));
+            var_dump(json_encode($response->getBody()));
+            die;
         }
 
         if ($response->getStatusCode() != 200) {
@@ -298,8 +209,8 @@ class CommonGroundService
 
         $response = json_decode($response->getBody(), true);
 
-        if (array_key_exists('@id', $response) && $response['@id']) {
-            $response['@id'] = $parsedUrl['scheme'].'://'.$parsedUrl['host'].$response['@id'];
+        if ($response['@id']) {
+            $response['@id'] = $parsedUrl['host'].$response['@id'];
         }
 
         // Lets cash this item for speed purposes
@@ -320,47 +231,15 @@ class CommonGroundService
             return false;
         }
 
-        // To work with NLX we need a couple of default headers
-        $headers = $this->headers;
-        $headers['X-NLX-Request-Subject-Identifier'] = $url;
+        $response = $this->client->request(
+            'POST',
+            $url,
+            [
+                'body' => json_encode($resource),
+            ]
+        );
 
-        // Split enviroments, if the env is not dev the we need add the env to the url name
-        $parsedUrl = parse_url($url);
-
-        // We only do this on non-production enviroments
-        if ($this->params->get('app_env') != 'prod') {
-
-            // Lets make sure we dont have doubles
-            $url = str_replace($this->params->get('app_env').'.', '', $url);
-
-            // e.g https://wrc.larping.eu/ becomes https://wrc.dev.larping.eu/
-            $host = explode('.', $parsedUrl['host']);
-            $subdomain = $host[0];
-            $url = str_replace($subdomain, $subdomain.'.'.$this->params->get('app_env'), $url);
-        }
-
-        if (!$async) {
-            $response = $this->client->request(
-                'POST',
-                $url,
-                [
-                    'body'    => json_encode($resource),
-                    'headers' => $headers,
-                ]
-            );
-        } else {
-            $response = $this->client->requestAsync(
-                'POST',
-                $url,
-                [
-                    'body'    => json_encode($resource),
-                    'headers' => $headers,
-                ]
-            );
-        }
-
-        if ($response->getStatusCode() != 201 && $response->getStatusCode() != 200) {
-            var_dump('POST returned:'.$response->getStatusCode());
+        if ($response->getStatusCode() != 201) {
             var_dump(json_encode($resource));
             var_dump(json_encode($url));
             var_dump($response->getBody());
@@ -369,8 +248,8 @@ class CommonGroundService
 
         $response = json_decode($response->getBody(), true);
 
-        if (array_key_exists('@id', $response) && $response['@id']) {
-            $response['@id'] = $parsedUrl['scheme'].'://'.$parsedUrl['host'].$response['@id'];
+        if ($response['@id']) {
+            $response['@id'] = $parsedUrl['host'].$response['@id'];
         }
 
         // Lets cash this item for speed purposes

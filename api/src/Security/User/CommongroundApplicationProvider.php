@@ -4,8 +4,6 @@
 
 namespace App\Security\User;
 
-use App\Service\CommonGroundService;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -13,15 +11,6 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
 
 class CommongroundApplicationProvider implements UserProviderInterface
 {
-    private $params;
-    private $commonGroundService;
-
-    public function __construct(ParameterBagInterface $params, CommonGroundService $commonGroundService)
-    {
-        $this->params = $params;
-        $this->commonGroundService = $commonGroundService;
-    }
-
     public function loadUserByUsername($username)
     {
         return $this->fetchUser($username);
@@ -51,13 +40,13 @@ class CommongroundApplicationProvider implements UserProviderInterface
         // $userData = ...
         // pretend it returns an array on success, false if there is no user
 
-        //if ($userData) {
-        //	$password = '...';
+        if ($userData) {
+            $password = '...';
 
-        // ...
+            // ...
 
-        return new CommongroundApplication('Default Application', $uuid, null, ['user']);
-        //}
+            return new CommongroundApplication($username, $password, $salt, $roles);
+        }
 
         throw new UsernameNotFoundException(
             sprintf('Application "%s" does not exist.', $uuid)
